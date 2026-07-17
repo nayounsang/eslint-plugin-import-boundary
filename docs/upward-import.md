@@ -1,12 +1,12 @@
 # `upwardImport`
 
-## Intent
+## Why
 
-A child must not import an **ancestor module**. Dependencies should flow downward (parent → child barrel), not upward. That keeps upper layers free of reverse coupling from nested features.
+Together with [`skipLevelImport`](skip-level-import.md), this rule keeps **dependency boundaries predictable**: nesting says who may depend on whom. A child must not import an **ancestor module**—dependencies flow downward (parent → child barrel), not upward—so upper layers stay free of reverse coupling from nested features.
 
 ## Allowed (exceptions)
 
-The usual exception is a [`sharedFiles`](shared-files.md) resource owned by that ancestor:
+The usual exception is a [`sharedFiles`](shared-files.md) resource owned by that ancestor (common logic inside the same concern):
 
 ```text
 shell/
@@ -22,7 +22,7 @@ import { x } from "../foo"; // OK when foo matches sharedFiles
 
 Direct **downward** imports remain allowed (parent → child barrel) — those are not upward.
 
-## Forbidden → `upwardImport`
+## Forbidden
 
 ```text
 shell/
@@ -48,5 +48,6 @@ Message:
 
 ## Related
 
-- Shared escape hatch: [`sharedFiles`](shared-files.md)
-- Other forbidden relationships: [`notAllowedTarget`](not-allowed-target.md)
+- Shared common logic in one concern: [`sharedFiles`](shared-files.md)
+- Skip-level edges: [`skipLevelImport`](skip-level-import.md)
+- Peer / cross-concern edges: `notAllowedTarget` unless opened via [`files`](files.md)

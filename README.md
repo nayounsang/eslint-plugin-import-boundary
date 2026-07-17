@@ -46,7 +46,7 @@ export default [
 ];
 ```
 
-> For the full boundary rules and allow/deny examples, see the [docs](./docs/).
+> For the full boundary rules and allow/deny examples, see the [docs](https://nayounsang.github.io/eslint-plugin-import-boundary/).
 
 ## Options
 
@@ -155,4 +155,4 @@ pnpm typecheck
 | `pnpm lint` | ESLint on `src/` |
 | `pnpm typecheck` | `tsc --noEmit` |
 
-Docs live under [`docs/`](./docs/) (Docsify). Serve them locally by opening `docs/index.html` via a static server from the repo root or the `docs/` folder (for example `npx serve docs`).
+Docs: [https://nayounsang.github.io/eslint-plugin-import-boundary/](https://nayounsang.github.io/eslint-plugin-import-boundary/) (source in [`docs/`](./docs/), Docsify). Serve locally with `npx serve docs`.

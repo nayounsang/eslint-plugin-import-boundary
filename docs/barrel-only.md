@@ -1,6 +1,6 @@
 # Barrel only
 
-## Intent
+## Why
 
 A folder’s **public API is its index barrel**. Other modules may depend on that surface, not on files buried inside the folder. That keeps internals free to move without breaking every consumer.
 
@@ -33,7 +33,7 @@ Same-folder child barrels work the same way:
 import { util } from "./util"; // OK — sibling folder’s barrel under menu
 ```
 
-## Forbidden → `barrelOnly`
+## Forbidden
 
 Reaching a allowed target through a **non-canonical** path (or an internal file) is rejected. Use the short barrel specifier, not a detour through parent segments or deep files.
 
@@ -50,4 +50,4 @@ Message:
 ## Related
 
 - Skipping past a child to a grandchild is [`skipLevelImport`](skip-level-import.md), not `barrelOnly`.
-- Peer folders are [`notAllowedTarget`](not-allowed-target.md) unless you opt in with [`files`](files.md).
+- Peer folders are denied (`notAllowedTarget`) unless you opt in with [`files`](files.md).

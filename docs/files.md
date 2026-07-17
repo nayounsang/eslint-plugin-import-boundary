@@ -1,8 +1,8 @@
 # Option: `files`
 
-## Intent
+## Why
 
-By default, **sibling folders cannot import each other**. That is often too strict for a domain tree where several direct children of a root are peers that should talk only through barrels.
+Use `files` when **different concerns (domains)** need to depend on each other’s logic. By default peer folders cannot import each other; this option opens a controlled edge so those concerns may talk **only through barrels** (sibling barrels under a root, or another root’s barrel—not its internals).
 
 `files` uses the same style of globs as ESLint `files` (for example `src/A/**/*.{ts,tsx}`). The path **before** `/**` becomes a **tree root**.
 
@@ -22,19 +22,19 @@ Under those roots:
 }
 ```
 
-Here the roots are `src/A` and `src/E`.
+Here the roots are `src/A` and `src/E`—each treated as a concern boundary you chose to connect.
 
 ## Allowed
 
 ```text
 src/
-├── A/                 ← files root
+├── A/                 ← files root (concern)
 │   ├── index.ts
 │   ├── B/
 │   │   └── index.ts
 │   └── C/
 │       └── index.ts
-└── E/                 ← files root
+└── E/                 ← files root (concern)
     └── index.ts
 ```
 
@@ -43,7 +43,7 @@ src/
 import { C } from "../C"; // OK under root A
 
 // A/B → E root barrel
-import { E } from "../../E"; // OK — other root’s barrel only
+import { E } from "../../E"; // OK — other concern’s barrel only
 
 // A → B direct child (always OK)
 import { B } from "./B"; // OK
@@ -78,4 +78,4 @@ import { C } from "../C"; // notAllowedTarget when files is omitted
 ## Related
 
 - Barrel path shape: [Barrel only](barrel-only.md)
-- Shared resources under an owner: [`sharedFiles`](shared-files.md)
+- Shared logic inside one concern: [`sharedFiles`](shared-files.md)

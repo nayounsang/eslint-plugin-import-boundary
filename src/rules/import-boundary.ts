@@ -12,8 +12,8 @@ import { parseFilesRoots } from "../utils/files-roots.js";
 import { type BoundaryOptions, parseOptions } from "../utils/options.js";
 
 const createRule = ESLintUtils.RuleCreator(
-    (name) =>
-        `https://github.com/untitle/jsproject/blob/main/tot/eslint-plugin-import-boundary/README.md#${name}`,
+    (_name) =>
+        "https://nayounsang.github.io/eslint-plugin-import-boundary/",
 );
 
 function getImportSource(

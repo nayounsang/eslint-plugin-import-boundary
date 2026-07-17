@@ -103,7 +103,7 @@ export function resolveAliasPath(
     const candidates = matcher(importSource);
     if (candidates.length === 0) return null;
 
-    return normalizeSlashes(candidates[0]!);
+    return normalizeSlashes(candidates[0]);
 }
 
 /** Clear caches (for tests). */

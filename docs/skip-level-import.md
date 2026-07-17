@@ -1,8 +1,8 @@
 # `skipLevelImport`
 
-## Intent
+## Why
 
-A parent may depend only on a **direct child barrel**. Jumping to a grandchild (or deeper) skips the child’s public surface and couples you to nested structure.
+Together with [`upwardImport`](upward-import.md), this rule keeps **dependency boundaries predictable**. A parent may depend only on a **direct child barrel**. Jumping to a grandchild (or deeper) skips the child’s public surface and couples you to nested structure you should not see.
 
 ## Allowed
 
@@ -23,7 +23,7 @@ import { Menu } from "./menu"; // OK — direct child barrel
 import { Detail } from "./detail"; // OK — menu’s direct child
 ```
 
-## Forbidden → `skipLevelImport`
+## Forbidden
 
 ```ts
 // shell/shell.tsx
@@ -38,5 +38,6 @@ Message:
 
 ## Related
 
+- Upward edges: [`upwardImport`](upward-import.md)
 - Wrong path to an otherwise valid child: [`barrelOnly`](barrel-only.md)
-- Peer / uncle targets: [`notAllowedTarget`](not-allowed-target.md)
+- Peer / uncle targets: denied as `notAllowedTarget` unless opened via [`files`](files.md)
