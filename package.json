@@ -1,0 +1,48 @@
+{
+  "name": "eslint-plugin-import-boundary",
+  "version": "0.0.0",
+  "description": "ESLint rule that enforces import boundaries via index barrels and directory nesting",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "dev": "vitest",
+    "prepublishOnly": "pnpm build"
+  },
+  "peerDependencies": {
+    "eslint": "^9.0.0"
+  },
+  "dependencies": {
+    "@typescript-eslint/utils": "8.59.4",
+    "get-tsconfig": "^4.14.0",
+    "picomatch": "4.0.5",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.4",
+    "@types/eslint": "9.6.1",
+    "@types/node": "22.15.0",
+    "@types/picomatch": "4.0.3",
+    "@typescript-eslint/parser": "8.59.4",
+    "@typescript-eslint/rule-tester": "8.59.4",
+    "@vitest/coverage-v8": "3.2.4",
+    "eslint": "9.39.4",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.59.4",
+    "vitest": "3.2.4"
+  },
+  "packageManager": "pnpm@9.14.0"
+}

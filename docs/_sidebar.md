@@ -1,0 +1,8 @@
+- [Why](README.md)
+- [Quick start](quick-start.md)
+- [Barrel only](barrel-only.md)
+- [sharedFiles](shared-files.md)
+- [files](files.md)
+- [upwardImport](upward-import.md)
+- [skipLevelImport](skip-level-import.md)
+- [notAllowedTarget](not-allowed-target.md)

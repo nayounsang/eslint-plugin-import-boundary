@@ -1,0 +1,14 @@
+import type { TSESLint } from "@typescript-eslint/utils";
+import { importBoundaryRule } from "./rules/import-boundary.js";
+
+const plugin: TSESLint.FlatConfig.Plugin = {
+  meta: {
+    name: "eslint-plugin-import-boundary",
+    version: "0.0.0",
+  },
+  rules: {
+    "import-boundary": importBoundaryRule,
+  },
+};
+
+export default plugin;
