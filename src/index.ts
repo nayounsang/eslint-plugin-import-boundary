@@ -5,7 +5,7 @@ import { extractDirectChildDirs } from "./utils/index.js";
 const plugin: TSESLint.FlatConfig.Plugin = {
   meta: {
     name: "eslint-plugin-import-boundary",
-    version: "0.0.1",
+    version: "0.0.0",
   },
   rules: {
     "import-boundary": importBoundaryRule,
