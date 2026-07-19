@@ -2,29 +2,88 @@ import { describe, expect, it } from "vitest";
 import { parseOptions } from "./options.js";
 
 describe("parseOptions", () => {
-    it("defaults sharedFiles and files to empty arrays when omitted", () => {
-        expect(parseOptions({})).toEqual({ sharedFiles: [], files: [] });
-        expect(parseOptions(undefined)).toEqual({
+    it("defaults publicEntryFiles, sharedFiles, and rootFiles when omitted", () => {
+        expect(parseOptions({})).toEqual({
+            publicEntryFiles: ["**/index"],
             sharedFiles: [],
-            files: [],
+            rootFiles: [],
         });
+        expect(parseOptions(undefined)).toEqual({
+            publicEntryFiles: ["**/index"],
+            sharedFiles: [],
+            rootFiles: [],
+        });
+    });
+
+    it("accepts publicEntryFiles globs", () => {
+        expect(parseOptions({ publicEntryFiles: ["**/mod"] })).toEqual({
+            publicEntryFiles: ["**/mod"],
+            sharedFiles: [],
+            rootFiles: [],
+        });
+    });
+
+    it("accepts empty publicEntryFiles to disable entry stripping", () => {
+        expect(parseOptions({ publicEntryFiles: [] })).toEqual({
+            publicEntryFiles: [],
+            sharedFiles: [],
+            rootFiles: [],
+        });
+    });
+
+    it("rejects directory globs in publicEntryFiles", () => {
+        expect(() =>
+            parseOptions({ publicEntryFiles: ["**/api/**"] }),
+        ).toThrow(/must use file globs, not directory globs/);
+        expect(() =>
+            parseOptions({ publicEntryFiles: ["**/api/*"] }),
+        ).toThrow(/must use file globs, not directory globs/);
+        expect(() =>
+            parseOptions({ publicEntryFiles: ["src/api/"] }),
+        ).toThrow(/must use file globs, not directory globs/);
     });
 
     it("accepts sharedFiles globs", () => {
         expect(parseOptions({ sharedFiles: ["**/foo.ts"] })).toEqual({
+            publicEntryFiles: ["**/index"],
             sharedFiles: ["**/foo.ts"],
-            files: [],
+            rootFiles: [],
         });
     });
 
-    it("accepts files globs", () => {
+    it("accepts rootFiles paths", () => {
         expect(
             parseOptions({
-                files: ["A/**/*.{ts,tsx}", "B/**/*.{ts,tsx}"],
+                rootFiles: ["A", "B"],
             }),
         ).toEqual({
+            publicEntryFiles: ["**/index"],
             sharedFiles: [],
-            files: ["A/**/*.{ts,tsx}", "B/**/*.{ts,tsx}"],
+            rootFiles: ["A", "B"],
+        });
+    });
+
+    it("accepts rootFiles object entries with allowedDependencies", () => {
+        expect(
+            parseOptions({
+                rootFiles: [
+                    "A",
+                    {
+                        path: "B",
+                        allowedDependencies: ["A"],
+                    },
+                ],
+            }),
+        ).toEqual({
+            publicEntryFiles: ["**/index"],
+            sharedFiles: [],
+            rootFiles: [
+                "A",
+                {
+                    path: "B",
+                    allowedDependencies: ["A"],
+                },
+            ],
         });
     });
 
@@ -34,15 +93,56 @@ describe("parseOptions", () => {
         );
     });
 
+    it("rejects non-string publicEntryFiles entries with a schema message", () => {
+        expect(() => parseOptions({ publicEntryFiles: [1] })).toThrow(
+            /Each "publicEntryFiles" entry must be a glob string/,
+        );
+    });
+
     it("rejects non-string sharedFiles entries with a schema message", () => {
         expect(() => parseOptions({ sharedFiles: [1] })).toThrow(
             /Each "sharedFiles" entry must be a glob string/,
         );
     });
 
-    it("rejects non-string files entries with a schema message", () => {
-        expect(() => parseOptions({ files: [1] })).toThrow(
-            /Each "files" entry must be a glob string/,
+    it("rejects invalid rootFiles entries with a schema message", () => {
+        expect(() => parseOptions({ rootFiles: [1] })).toThrow(
+            /Each "rootFiles" entry must be a path string or object/,
         );
+    });
+
+    it("rejects unknown allowedDependencies roots", () => {
+        expect(() =>
+            parseOptions({
+                rootFiles: [
+                    "A",
+                    {
+                        path: "B",
+                        allowedDependencies: ["C"],
+                    },
+                ],
+            }),
+        ).toThrow(/allowedDependencies references unknown root/);
+    });
+
+    it("rejects self-referential allowedDependencies", () => {
+        expect(() =>
+            parseOptions({
+                rootFiles: [
+                    {
+                        path: "A",
+                        allowedDependencies: ["A"],
+                    },
+                ],
+            }),
+        ).toThrow(/allowedDependencies cannot reference its own root/);
+    });
+
+    it("rejects duplicate rootFiles roots", () => {
+        expect(() =>
+            parseOptions({
+                rootFiles: ["A", "A"],
+            }),
+        ).toThrow(/duplicate rootFiles root/);
     });
 });

@@ -25,11 +25,11 @@ afterEach(() => {
     clearTsconfigPathsCache();
 });
 
-const FILES_OPTIONS = [
+const ROOT_FILES_OPTIONS = [
     {
-        files: [
-            `${FIXTURE_ROOT}/src/A/**/*.{ts,tsx}`,
-            `${FIXTURE_ROOT}/src/B/**/*.{ts,tsx}`,
+        rootFiles: [
+            `${FIXTURE_ROOT}/src/A`,
+            `${FIXTURE_ROOT}/src/B`,
         ],
     },
 ] as const satisfies RuleOptions;
@@ -47,10 +47,10 @@ ruleTester.run("import-boundary (path aliases)", importBoundaryRule, {
             filename: file("shell/shell.tsx"),
         },
         {
-            name: "alias files-cross root barrel",
+            name: "alias rootFiles-cross root barrel",
             code: 'import x from "@/B";',
             filename: file("A/foo/foo.tsx"),
-            options: FILES_OPTIONS,
+            options: ROOT_FILES_OPTIONS,
         },
     ],
     invalid: [

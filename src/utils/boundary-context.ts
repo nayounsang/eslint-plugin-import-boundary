@@ -1,11 +1,19 @@
 import path from "node:path";
-import { parseFilesRoots } from "./files-roots.js";
 import type { BoundaryOptions } from "./options.js";
 import { parentPath } from "./module-path.js";
+import {
+    DEFAULT_PUBLIC_ENTRY_FILES,
+    isPublicEntryPath,
+    stripPublicEntry,
+} from "./public-entry-files.js";
 import {
     isAllowedTarget,
     isAncestor,
     isDescendantNonDirect,
+    parseRootFilesGraph,
+    getFilesRoot,
+    EMPTY_ROOT_FILES_GRAPH,
+    type RootFilesGraph,
 } from "./relations/index.js";
 import { isSharedResourceImport } from "./shared-files.js";
 import { resolveAliasPath } from "./tsconfig-paths.js";
@@ -14,16 +22,21 @@ export type { BoundaryOptions };
 
 export type ResolvedImport = {
     fromPath: string;
-    /** Absolute path without extension / trailing index, e.g. `/project/src/shell/tabs` */
+    /** Absolute path without extension / trailing public entry, e.g. `/project/src/shell/tabs` */
     pathNoExt: string | null;
     isExternal: boolean;
 };
 
 export type ViolationId =
-    | "barrelOnly"
+    | "publicEntryOnly"
     | "upwardImport"
     | "skipLevelImport"
     | "notAllowedTarget";
+
+export type Violation = {
+    id: ViolationId;
+    reason: string;
+};
 
 function normalizeSlashes(value: string): string {
     return value.replace(/\\/g, "/");
@@ -36,28 +49,53 @@ export function getModulePath(filename: string | undefined): string | null {
     return path.posix.dirname(normalizeSlashes(filename));
 }
 
-function stripExtensionAndIndex(absolutePath: string): string {
-    let result = absolutePath.replace(/\.(tsx?|jsx?|mts|cts|mjs|cjs)$/, "");
-    if (result.endsWith("/index")) {
-        result = result.slice(0, -"/index".length);
-    }
-    if (result === "index") {
-        return "";
-    }
-    return result;
+function stripExtension(absolutePath: string): string {
+    return absolutePath.replace(/\.(tsx?|jsx?|mts|cts|mjs|cjs)$/, "");
 }
 
 function normalizeDots(value: string): string {
     return value.replace(/\/+$/, "") || ".";
 }
 
+function stripTrailingPublicEntryFromImport(
+    withoutExt: string,
+    toPath: string,
+    publicEntryFiles: readonly string[],
+): string {
+    const normalized = normalizeDots(withoutExt);
+    const lastSlash = normalized.lastIndexOf("/");
+    const basename =
+        lastSlash === -1 ? normalized : normalized.slice(lastSlash + 1);
+    if (basename === "." || basename === "..") {
+        return normalized;
+    }
+
+    const absoluteEntry = toPath === "" ? basename : `${toPath}/${basename}`;
+    if (!isPublicEntryPath(absoluteEntry, publicEntryFiles)) {
+        return normalized;
+    }
+
+    if (lastSlash === -1) {
+        return ".";
+    }
+    return normalizeDots(normalized.slice(0, lastSlash)) || ".";
+}
+
 export function isBarrelSource(
     importSource: string,
     fromPath: string,
     toPath: string,
+    publicEntryFiles: readonly string[] = DEFAULT_PUBLIC_ENTRY_FILES,
 ): boolean {
-    const normalized = normalizeDots(
-        importSource.replace(/\/index\.tsx?$/, "").replace(/\/index$/, ""),
+    // ESM/TS often spell entries as `./menu.js` or `./menu/index.js`.
+    const withoutExt = importSource.replace(
+        /\.(tsx?|jsx?|mts|cts|mjs|cjs)$/,
+        "",
+    );
+    const normalized = stripTrailingPublicEntryFromImport(
+        withoutExt,
+        toPath,
+        publicEntryFiles,
     );
 
     const fromSegments = fromPath === "" ? [] : fromPath.split("/");
@@ -94,6 +132,7 @@ export function isBarrelSource(
 export function resolveImport(
     filename: string,
     importSource: string,
+    publicEntryFiles: readonly string[] = DEFAULT_PUBLIC_ENTRY_FILES,
 ): ResolvedImport | null {
     const fromPath = getModulePath(filename);
     if (fromPath === null) return null;
@@ -109,7 +148,10 @@ export function resolveImport(
         }
         return {
             fromPath,
-            pathNoExt: stripExtensionAndIndex(aliased),
+            pathNoExt: stripPublicEntry(
+                stripExtension(aliased),
+                publicEntryFiles,
+            ),
             isExternal: false,
         };
     }
@@ -120,20 +162,55 @@ export function resolveImport(
 
     return {
         fromPath,
-        pathNoExt: stripExtensionAndIndex(joined),
+        pathNoExt: stripPublicEntry(stripExtension(joined), publicEntryFiles),
         isExternal: false,
     };
+}
+
+function publicEntryFilesFromOptions(
+    options: BoundaryOptions,
+): readonly string[] {
+    return options.publicEntryFiles ?? DEFAULT_PUBLIC_ENTRY_FILES;
+}
+
+function notAllowedReason(
+    fromPath: string,
+    toPath: string,
+    graph: RootFilesGraph,
+): string {
+    const fromRoot = getFilesRoot(fromPath, graph.roots);
+    const toRoot = getFilesRoot(toPath, graph.roots);
+
+    if (toRoot !== null && fromRoot !== toRoot) {
+        if (toPath !== toRoot) {
+            return "only that root's public entry is importable across roots";
+        }
+        return "cross-root import requires both sides in rootFiles (and an allowed edge)";
+    }
+
+    const fromParent = parentPath(fromPath);
+    const toParent = parentPath(toPath);
+    if (
+        fromParent !== null &&
+        toParent !== null &&
+        fromParent === toParent
+    ) {
+        return "they are sibling modules under the same parent";
+    }
+
+    return "it is outside the allowed parent→child (or rootFiles) edge";
 }
 
 export function classifyImport(
     resolved: ResolvedImport,
     options: BoundaryOptions,
     importSource: string,
-): ViolationId | null {
+): Violation | null {
     if (resolved.isExternal) return null;
     if (resolved.pathNoExt === null) return null;
 
     const { fromPath, pathNoExt: target } = resolved;
+    const publicEntryFiles = publicEntryFilesFromOptions(options);
 
     if (fromPath === target) return null;
 
@@ -141,29 +218,42 @@ export function classifyImport(
         return null;
     }
 
-    const roots = parseFilesRoots(options.files ?? []);
+    const graph = parseRootFilesGraph(options.rootFiles ?? []);
 
-    if (isAllowedTarget(fromPath, target, roots)) {
+    if (isAllowedTarget(fromPath, target, graph)) {
         // Alias imports that resolve to the module root are treated as barrels;
         // only relative imports need a canonical relative form check.
         if (
             importSource.startsWith(".") &&
-            !isBarrelSource(importSource, fromPath, target)
+            !isBarrelSource(importSource, fromPath, target, publicEntryFiles)
         ) {
-            return "barrelOnly";
+            return {
+                id: "publicEntryOnly",
+                reason: "the import path must be the canonical public entry form",
+            };
         }
         return null;
     }
 
     if (isAncestor(fromPath, target)) {
-        return "upwardImport";
+        return {
+            id: "upwardImport",
+            reason:
+                "child modules may not import ancestors (except sharedFiles)",
+        };
     }
 
     if (isDescendantNonDirect(fromPath, target)) {
-        return "skipLevelImport";
+        return {
+            id: "skipLevelImport",
+            reason: "only a direct child's public entry may be imported",
+        };
     }
 
-    return "notAllowedTarget";
+    return {
+        id: "notAllowedTarget",
+        reason: notAllowedReason(fromPath, target, graph),
+    };
 }
 
 /** Module path shown in lint messages (cwd-relative when possible). */
@@ -180,16 +270,16 @@ export function toReportPath(modulePath: string): string {
 export function getReportedToPath(
     resolved: ResolvedImport,
     violation: ViolationId,
-    roots: readonly string[] = [],
+    graph: RootFilesGraph = EMPTY_ROOT_FILES_GRAPH,
 ): string {
     if (!resolved.pathNoExt) return "";
     let reported = resolved.pathNoExt;
-    if (violation === "barrelOnly") {
+    if (violation === "publicEntryOnly") {
         const parent = parentPath(resolved.pathNoExt);
         if (
             parent !== null &&
-            isAllowedTarget(resolved.fromPath, parent, roots) &&
-            !isAllowedTarget(resolved.fromPath, resolved.pathNoExt, roots)
+            isAllowedTarget(resolved.fromPath, parent, graph) &&
+            !isAllowedTarget(resolved.fromPath, resolved.pathNoExt, graph)
         ) {
             reported = parent;
         }

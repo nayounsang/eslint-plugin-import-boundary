@@ -1,5 +1,6 @@
 import type { TSESLint } from "@typescript-eslint/utils";
-import { importBoundaryRule } from "./rules/import-boundary.js";
+import { importBoundaryRule } from "./rules/index.js";
+import { extractDirectChildDirs } from "./utils/extract-direct-child-dirs.js";
 
 const plugin: TSESLint.FlatConfig.Plugin = {
   meta: {
@@ -12,3 +13,4 @@ const plugin: TSESLint.FlatConfig.Plugin = {
 };
 
 export default plugin;
+export { extractDirectChildDirs };

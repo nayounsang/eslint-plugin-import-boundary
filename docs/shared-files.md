@@ -1,12 +1,44 @@
 # Option: `sharedFiles`
 
-## Why
+Use `sharedFiles` for common logic **inside one owning folder**—helpers, types, a `shared` module—without opening every ancestor as a general import target. To wire separate trees together, use [`rootFiles`](root-files.md) instead.
 
-Use `sharedFiles` for **common logic inside one concern (domain)**—helpers, types, a `shared` module—without opening every ancestor module as a general import target. It is not for wiring separate concerns together; that is [`files`](files.md).
+Each match has an **owning folder** (the parent of the shared entry). Any file **under that owner** may import the shared resource—including what would otherwise be an upward import.
 
-`sharedFiles` is a list of glob patterns. A match has an **owning folder** (the parent of the shared entry). Any module **under that owner** may import the shared resource freely — including what would otherwise be an upward import.
+## How far shared reaches
 
-## Configuration
+`sharedFiles` marks common code. Each shared file may provide logic to anything **under its owning folder**.
+
+```js
+{
+  sharedFiles: ["**/shared.ts"],
+}
+```
+
+```text
+shell/
+├── shared.ts
+└── menu/
+    ├── shared.ts
+    └── detail/
+```
+
+```mermaid
+flowchart TB
+  shell[shell]
+  shellShared["shell/shared.ts"]
+  menuShared["menu/shared.ts"]
+  menu[menu]
+  detail[detail]
+  shellShared --> shell
+  shellShared --> menu
+  shellShared --> detail
+  menuShared --> menu
+  menuShared --> detail
+```
+
+Files outside an owner cannot treat that owner’s shared file as theirs under this exception.
+
+## Configuration patterns
 
 ```js
 {
@@ -18,8 +50,6 @@ Use `sharedFiles` for **common logic inside one concern (domain)**—helpers, ty
 }
 ```
 
-Typical pattern shapes:
-
 | Glob | Matches |
 |------|---------|
 | `**/foo.ts` / `**/foo.tsx` | A single shared file named `foo` |
@@ -28,24 +58,13 @@ Typical pattern shapes:
 
 ## Allowed
 
-```text
-shell/
-├── foo.ts          ← shared common logic (owner: shell)
-├── menu/
-│   ├── menu.tsx
-│   └── detail/
-│       └── detail.tsx
-└── …
-```
-
-With `sharedFiles: ["**/foo.ts", "**/foo.tsx"]`:
-
 ```ts
 // shell/menu/menu.tsx
-import { x } from "../foo"; // OK — shared owned by shell
+import { x } from "../shared"; // OK — under owner shell
 
 // shell/menu/detail/detail.tsx
-import { x } from "../../foo"; // OK — still under owner shell
+import { x } from "../../shared"; // OK — still under shell
+import { y } from "../shared"; // OK — under owner menu
 ```
 
 Shared folders:
@@ -57,11 +76,7 @@ import { format } from "../foo/format"; // OK from under the owner
 
 ## Forbidden
 
-Shared is **not** a free pass for unrelated edges:
-
-- Skip-level into non-shared children → [`skipLevelImport`](skip-level-import.md)
-- Peer barrels that are not shared → `notAllowedTarget` (use [`files`](files.md) to connect concerns)
-- Importing a non-shared ancestor module → [`upwardImport`](upward-import.md)
+Shared is not a free pass for unrelated edges. Skip-level, peer, and non-shared ancestor imports still follow [Default boundaries](default-boundaries.md).
 
 ```ts
 // shell/menu/menu.tsx
@@ -71,4 +86,7 @@ import { Tabs } from "../tabs"; // notAllowedTarget — tabs is not shared
 import { Menu } from ".."; // upwardImport — ancestor module, not shared
 ```
 
-Modules outside the owning folder cannot treat that shared resource as theirs under this exception.
+## Related
+
+- Cross-tree edges: [`rootFiles`](root-files.md)
+- Default allow/deny: [Default boundaries](default-boundaries.md)

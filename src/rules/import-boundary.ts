@@ -4,12 +4,13 @@ import {
     classifyImport,
     getModulePath,
     getReportedToPath,
+    parseRootFilesGraph,
+    parseOptions,
     resolveImport,
     toReportPath,
+    type BoundaryOptions,
     type ViolationId,
-} from "../utils/boundary-context.js";
-import { parseFilesRoots } from "../utils/files-roots.js";
-import { type BoundaryOptions, parseOptions } from "../utils/options.js";
+} from "../utils/index.js";
 
 const createRule = ESLintUtils.RuleCreator(
     (_name) =>
@@ -35,29 +36,49 @@ export const importBoundaryRule = createRule<Options, ViolationId>({
         type: "problem",
         docs: {
             description:
-                "Enforce import boundaries based on directory nesting. Scope files via ESLint `files`.",
+                "Enforce import boundaries based on directory nesting.",
         },
         messages: {
-            barrelOnly:
-                'Import from "{{toPath}}" must use its index barrel, not internal files.',
+            publicEntryOnly:
+                'Import from "{{toPath}}" must use its public entry, not internal files, because {{reason}}.',
             upwardImport:
-                '"{{fromPath}}" cannot import ancestor "{{toPath}}".',
+                '"{{fromPath}}" cannot import ancestor "{{toPath}}" because {{reason}}.',
             skipLevelImport:
-                '"{{fromPath}}" cannot import "{{toPath}}" directly. Use a direct child instead.',
+                '"{{fromPath}}" cannot import "{{toPath}}" directly because {{reason}}.',
             notAllowedTarget:
-                '"{{fromPath}}" is not allowed to import "{{toPath}}".',
+                '"{{fromPath}}" cannot import "{{toPath}}" because {{reason}}.',
         },
         schema: [
             {
                 type: "object",
                 properties: {
+                    publicEntryFiles: {
+                        type: "array",
+                        items: { type: "string" },
+                    },
                     sharedFiles: {
                         type: "array",
                         items: { type: "string" },
                     },
-                    files: {
+                    rootFiles: {
                         type: "array",
-                        items: { type: "string" },
+                        items: {
+                            oneOf: [
+                                { type: "string" },
+                                {
+                                    type: "object",
+                                    properties: {
+                                        path: { type: "string" },
+                                        allowedDependencies: {
+                                            type: "array",
+                                            items: { type: "string" },
+                                        },
+                                    },
+                                    required: ["path"],
+                                    additionalProperties: false,
+                                },
+                            ],
+                        },
                     },
                 },
                 additionalProperties: false,
@@ -67,14 +88,20 @@ export const importBoundaryRule = createRule<Options, ViolationId>({
     defaultOptions: [{}],
     create(context) {
         const boundaryOptions = parseOptions(context.options[0]);
-        const filesRoots = parseFilesRoots(boundaryOptions.files ?? []);
+        const filesGraph = parseRootFilesGraph(
+            boundaryOptions.rootFiles ?? [],
+        );
         const filename = context.filename;
         if (getModulePath(filename) === null) {
             return {};
         }
 
         function checkSource(node: TSESTree.Node, importSource: string): void {
-            const resolved = resolveImport(filename, importSource);
+            const resolved = resolveImport(
+                filename,
+                importSource,
+                boundaryOptions.publicEntryFiles,
+            );
             if (!resolved) return;
 
             const violation = classifyImport(
@@ -86,10 +113,15 @@ export const importBoundaryRule = createRule<Options, ViolationId>({
 
             context.report({
                 node,
-                messageId: violation,
+                messageId: violation.id,
                 data: {
                     fromPath: toReportPath(resolved.fromPath),
-                    toPath: getReportedToPath(resolved, violation, filesRoots),
+                    toPath: getReportedToPath(
+                        resolved,
+                        violation.id,
+                        filesGraph,
+                    ),
+                    reason: violation.reason,
                 },
             });
         }

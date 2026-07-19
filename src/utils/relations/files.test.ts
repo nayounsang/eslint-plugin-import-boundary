@@ -1,33 +1,38 @@
 import { describe, expect, it } from "vitest";
-import { isFilesCrossImport, isFilesPeerImport } from "./files.js";
+import { isFilesCrossImport } from "./files.js";
+import { parseRootFilesGraph } from "./files-roots.js";
 
-const roots = ["/A", "/B"];
-
-describe("isFilesPeerImport", () => {
-    it("allows peer barrels under the same files root", () => {
-        expect(isFilesPeerImport("/A/foo", "/A/bar", roots)).toBe(true);
-    });
-
-    it("denies nested peers that are not root direct children", () => {
-        expect(isFilesPeerImport("/A/foo/x", "/A/foo/y", roots)).toBe(false);
-    });
-
-    it("denies deep imports into a peer subtree", () => {
-        expect(isFilesPeerImport("/A/foo", "/A/bar/util", roots)).toBe(false);
-    });
-
-    it("denies importing the files root itself (upward)", () => {
-        expect(isFilesPeerImport("/A/foo", "/A", roots)).toBe(false);
-    });
-});
+const clique = parseRootFilesGraph(
+    ["A", "B"],
+    "/",
+);
 
 describe("isFilesCrossImport", () => {
-    it("allows importing another files root barrel", () => {
-        expect(isFilesCrossImport("/A/foo", "/B", roots)).toBe(true);
-        expect(isFilesCrossImport("/A", "/B", roots)).toBe(true);
+    it("allows importing another rootFiles root barrel", () => {
+        expect(isFilesCrossImport("/A/foo", "/B", clique)).toBe(true);
+        expect(isFilesCrossImport("/A", "/B", clique)).toBe(true);
     });
 
-    it("denies importing internals of another files root", () => {
-        expect(isFilesCrossImport("/A/foo", "/B/foo", roots)).toBe(false);
+    it("denies importing internals of another rootFiles root", () => {
+        expect(isFilesCrossImport("/A/foo", "/B/foo", clique)).toBe(false);
+    });
+
+    it("denies same-root peer barrels (peer policy removed)", () => {
+        expect(isFilesCrossImport("/A/foo", "/A/bar", clique)).toBe(false);
+    });
+
+    it("honors directed allowedDependencies edges", () => {
+        const graph = parseRootFilesGraph(
+            [
+                "A",
+                {
+                    path: "B",
+                    allowedDependencies: ["A"],
+                },
+            ],
+            "/",
+        );
+        expect(isFilesCrossImport("/B/foo", "/A", graph)).toBe(true);
+        expect(isFilesCrossImport("/A/foo", "/B", graph)).toBe(false);
     });
 });

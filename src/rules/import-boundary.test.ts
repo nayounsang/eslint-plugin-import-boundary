@@ -20,6 +20,21 @@ ruleTester.run("import-boundary", importBoundaryRule, {
             importSource: "./menu",
         }),
         fromTo({
+            name: "direct child barrel with .js extension",
+            consumerFile: "shell/shell.tsx",
+            importSource: "./menu.js",
+        }),
+        fromTo({
+            name: "direct child barrel via /index.js",
+            consumerFile: "shell/shell.tsx",
+            importSource: "./menu/index.js",
+        }),
+        fromTo({
+            name: "same-folder file module with .js extension",
+            consumerFile: "shell/menu/menu.tsx",
+            importSource: "./util.js",
+        }),
+        fromTo({
             name: "exportAll direct child barrel",
             consumerFile: "shell/shell.tsx",
             importSource: "./menu",
@@ -29,11 +44,11 @@ ruleTester.run("import-boundary", importBoundaryRule, {
     invalid: [
         {
             ...fromTo({
-                name: "non-canonical relative → barrelOnly",
+                name: "non-canonical relative → publicEntryOnly",
                 consumerFile: "shell/shell.tsx",
                 importSource: "../shell/menu",
             }),
-            errors: [{ messageId: "barrelOnly" }],
+            errors: [{ messageId: "publicEntryOnly" }],
         },
         {
             ...fromTo({

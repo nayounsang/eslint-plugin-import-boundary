@@ -1,27 +1,105 @@
 # Why use import-boundary
 
-## Problem
+Inside one package, folder-to-folder imports are usually unrestricted—peers, skip-levels, and ancestor modules stay open unless you enforce them. This plugin turns **directory nesting** into an ESLint rule so dependency edges stay predictable at lint time.
 
-In a single package, folder-to-folder imports are usually unrestricted:
+By default only a parent may import a direct child’s [public entry](public-entry-files.md) (`index`). Sibling trees (features, `app`, `pages`, …) stay closed until you list them in `rootFiles`—for that layout, `rootFiles` is not an optional extra; it is how those peers connect. Use `sharedFiles` for shared logic under an owning folder.
 
-- A module can reach into a peer’s internals, skip a level, or import an ancestor.
-- Cohesion erodes, coupling spreads, and a small change can touch far more than expected.
-- Ownership (“who owns this edge?”) becomes hard to reason about in review.
+## Predictable flow inside one root
 
-`package.json` `"exports"` can close **package** borders, but it also splits build and management. Inside one package, folder boundaries stay open unless you enforce them yourself. Conventions alone do not hold.
+`rootFiles` treats each listed path as a tree. Imports under that tree follow nesting—parent folders depend on their direct children.
 
-### How other languages handle this
+```js
+{
+  rootFiles: ["src/A"],
+}
+```
 
-Other languages already have built-in answers to this. For example, **Go** ties privacy to packages (and `internal/`), and **Rust** encodes module visibility with `pub` / `pub(crate)`.
+```text
+src/A/
+├── B/
+│   ├── C/
+│   └── D/
+└── E/
+    └── F/
+```
 
-## Solution
+```mermaid
+flowchart TB
+  C[C] --> B[B]
+  D[D] --> B
+  B --> A[A]
+  F[F] --> E[E]
+  E --> A
+```
 
-This plugin turns directory nesting into an automated lint rule:
+See [`rootFiles`](root-files.md) and [Default boundaries](default-boundaries.md).
 
-1. **Public surface = index barrel** — consumers import a folder via its barrel, not its internals.
-2. **Predictable dependency boundaries** — parent → direct child barrel; upward and skip-level edges are denied by default ([`upwardImport`](upward-import.md), [`skipLevelImport`](skip-level-import.md)).
-3. **Opt-ins by concern** — [`sharedFiles`](shared-files.md) for common logic **inside one concern**; [`files`](files.md) so **different concerns** may depend on each other through barrels.
+## Shared logic under an owner
 
-Violations show up at lint time with clear message ids (`barrelOnly`, `upwardImport`, `skipLevelImport`, `notAllowedTarget`), so the boundary does not depend on memory or review discipline.
+`sharedFiles` marks common code. Each shared file may provide logic to anything **under its owning folder**.
 
-“Concern” / “domain” here is informal shorthand for a folder tree you treat as one unit of ownership—not a formal DDD claim.
+```js
+{
+  sharedFiles: ["**/shared.ts"],
+}
+```
+
+```text
+shell/
+├── shared.ts
+└── menu/
+    ├── shared.ts
+    └── detail/
+```
+
+```mermaid
+flowchart TB
+  shell[shell]
+  shellShared["shell/shared.ts"]
+  menuShared["menu/shared.ts"]
+  menu[menu]
+  detail[detail]
+  shellShared --> shell
+  shellShared --> menu
+  shellShared --> detail
+  menuShared --> menu
+  menuShared --> detail
+```
+
+See [`sharedFiles`](shared-files.md).
+
+## Roots may depend on each other
+
+`rootFiles` lets separate trees depend on each other’s public surface.
+
+```js
+{
+  rootFiles: [
+    "src/A",
+    "src/E",
+    "src/G",
+    "src/H",
+  ],
+}
+```
+
+```mermaid
+graph LR
+  A --- E
+  A --- G
+  A --- H
+  E --- G
+  E --- H
+  G --- H
+```
+
+Object entries can restrict edges with `allowedDependencies` (one-way). See [`rootFiles`](root-files.md).
+
+## Next steps
+
+1. [Quick start](quick-start.md) — install and minimal config
+2. [`rootFiles`](root-files.md) — choose roots and cross-root edges
+3. [`extractDirectChildDirs`](extract-direct-child-dirs.md) — list feature folders for `rootFiles`
+4. [`sharedFiles`](shared-files.md) — shared logic inside one tree
+5. [`publicEntryFiles`](public-entry-files.md) — folder public entry basename
+6. [Default boundaries](default-boundaries.md) — what is allowed or denied by default

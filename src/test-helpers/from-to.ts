@@ -1,8 +1,14 @@
 import type { ValidTestCase } from "@typescript-eslint/rule-tester";
+import type { RootFilesEntry } from "../utils/index.js";
 
 /** Must stay a 1-tuple so RuleTester does not widen `options` to an open-ended array. */
+
 export type RuleOptions = readonly [
-    { sharedFiles?: string[]; files?: string[] },
+    {
+        publicEntryFiles?: string[];
+        sharedFiles?: string[];
+        rootFiles?: RootFilesEntry[];
+    },
 ];
 
 export type FromToKind = "import" | "exportNamed" | "exportAll";
