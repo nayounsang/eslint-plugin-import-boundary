@@ -62,6 +62,18 @@ Full boundary rules, diagrams, and allow/deny examples: [docs](https://nayounsan
 |--------|---------|
 | `extractDirectChildDirs(parentPath, cwd?)` | Immediate child directories of `parentPath` as cwd-relative posix paths—handy to spread into `rootFiles`. See [docs](https://nayounsang.github.io/eslint-plugin-import-boundary/#/extract-direct-child-dirs). |
 
+## Release
+
+Versioning and publishing use [Changesets](https://github.com/changesets/changesets).
+
+```bash
+pnpm changeset            # record a change (patch / minor / major)
+pnpm version-packages     # apply changesets → bump version + CHANGELOG
+pnpm release              # build and publish to npm
+```
+
+On `main`, the Release workflow opens a version PR when changesets exist, and publishes after that PR is merged (requires repo secret `NPM_TOKEN`).
+
 ## Development
 
 ```bash

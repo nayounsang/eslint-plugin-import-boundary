@@ -23,7 +23,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -33,7 +34,10 @@
     "test:coverage": "vitest run --coverage",
     "dev": "vitest",
     "dev:docs": "npx serve docs",
-    "prepublishOnly": "pnpm build"
+    "prepublishOnly": "pnpm build",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build && changeset publish"
   },
   "peerDependencies": {
     "eslint": "^9.0.0"
@@ -45,6 +49,7 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.1",
     "@eslint/js": "9.39.4",
     "@types/eslint": "9.6.1",
     "@types/node": "22.15.0",
@@ -63,5 +68,13 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nayounsang/eslint-plugin-import-boundary.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "pnpm": {
+    "overrides": {
+      "human-id": "4.1.3"
+    }
   }
 }
