@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-import-boundary",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "ESLint rule that enforces import boundaries via index barrels and directory nesting",
   "license": "MIT",
   "keywords": [
