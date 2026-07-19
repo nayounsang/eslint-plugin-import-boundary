@@ -37,7 +37,7 @@
     "prepublishOnly": "pnpm build",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm build && changeset publish"
+    "release": "node scripts/release-publish.mjs"
   },
   "peerDependencies": {
     "eslint": "^9.0.0"
