@@ -224,3 +224,95 @@ ruleTester.run("import-boundary (rootFiles allowedDependencies)", importBoundary
         },
     ],
 });
+
+const FREE_INTERNAL_OPTIONS = [
+    {
+        rootFiles: [
+            {
+                path: "/project/src/A",
+                allowedDependencies: ["/project/src/B"],
+            },
+            {
+                path: "/project/src/B",
+                allowFreeInternal: true,
+                allowedDependencies: ["/project/src/A"],
+            },
+        ],
+    },
+] as const satisfies RuleOptions;
+
+ruleTester.run("import-boundary (rootFiles allowFreeInternal)", importBoundaryRule, {
+    valid: [
+        fromTo({
+            name: "freeInternal sibling peer",
+            consumerFile: "B/c/c.tsx",
+            importSource: "../d",
+            options: FREE_INTERNAL_OPTIONS,
+        }),
+        fromTo({
+            name: "freeInternal nested peer",
+            consumerFile: "B/c/e/e.tsx",
+            importSource: "../../d",
+            options: FREE_INTERNAL_OPTIONS,
+        }),
+        fromTo({
+            name: "freeInternal upward to parent",
+            consumerFile: "B/c/c.tsx",
+            importSource: "..",
+            options: FREE_INTERNAL_OPTIONS,
+        }),
+        fromTo({
+            name: "freeInternal non-public internal file",
+            consumerFile: "B/c/c.tsx",
+            importSource: "../d/internal",
+            options: FREE_INTERNAL_OPTIONS,
+        }),
+        fromTo({
+            name: "freeInternal → other root public entry",
+            consumerFile: "B/c/c.tsx",
+            importSource: "../../A",
+            options: FREE_INTERNAL_OPTIONS,
+        }),
+        fromTo({
+            name: "default root → freeInternal root public entry",
+            consumerFile: "A/foo/foo.tsx",
+            importSource: "../../B",
+            options: FREE_INTERNAL_OPTIONS,
+        }),
+        fromTo({
+            name: "default root direct child still ok",
+            consumerFile: "A/a.tsx",
+            importSource: "./foo",
+            options: FREE_INTERNAL_OPTIONS,
+        }),
+    ],
+    invalid: [
+        {
+            ...fromTo({
+                name: "default root same-root sibling still denied",
+                consumerFile: "A/foo/foo.tsx",
+                importSource: "../bar",
+                options: FREE_INTERNAL_OPTIONS,
+            }),
+            errors: [{ messageId: "notAllowedTarget" }],
+        },
+        {
+            ...fromTo({
+                name: "freeInternal → other root internals denied",
+                consumerFile: "B/c/c.tsx",
+                importSource: "../../A/foo",
+                options: FREE_INTERNAL_OPTIONS,
+            }),
+            errors: [{ messageId: "notAllowedTarget" }],
+        },
+        {
+            ...fromTo({
+                name: "default root → freeInternal internals denied",
+                consumerFile: "A/foo/foo.tsx",
+                importSource: "../../B/c",
+                options: FREE_INTERNAL_OPTIONS,
+            }),
+            errors: [{ messageId: "notAllowedTarget" }],
+        },
+    ],
+});

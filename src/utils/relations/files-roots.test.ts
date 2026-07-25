@@ -100,6 +100,34 @@ describe("parseRootFilesGraph", () => {
         const graph = parseRootFilesGraph(["A", { path: "B" }], cwd);
         expect(graph.allowedDependencies.get("/cwd/B")).toBeUndefined();
         expect(graph.allowedDependencies.get("/cwd/A")).toBeUndefined();
+        expect(graph.allowFreeInternalRoots.size).toBe(0);
+    });
+
+    it("records allowFreeInternal roots", () => {
+        const graph = parseRootFilesGraph(
+            [
+                "A",
+                {
+                    path: "B",
+                    allowFreeInternal: true,
+                    allowedDependencies: ["A"],
+                },
+            ],
+            cwd,
+        );
+        expect(graph.allowFreeInternalRoots).toEqual(new Set(["/cwd/B"]));
+        expect(graph.allowFreeInternalRoots.has("/cwd/A")).toBe(false);
+    });
+
+    it("ignores allowFreeInternal when false or omitted", () => {
+        const graph = parseRootFilesGraph(
+            [
+                { path: "A", allowFreeInternal: false },
+                { path: "B" },
+            ],
+            cwd,
+        );
+        expect(graph.allowFreeInternalRoots.size).toBe(0);
     });
 
     it("treats trailing-slash paths as the same root", () => {

@@ -30,6 +30,11 @@ const rootFilesEntrySchema = z.union(
                         },
                     )
                     .optional(),
+                allowFreeInternal: z
+                    .boolean({
+                        error: '"allowFreeInternal" must be a boolean',
+                    })
+                    .optional(),
             },
             {
                 error: (issue) => {

@@ -2,7 +2,7 @@
 
 Use `rootFiles` when separate directory trees should depend on each other through each tree’s public surface (its [`publicEntryFiles`](public-entry-files.md) entry, default `index`). Without it, peer folders cannot import each other—so for a typical `app` / `pages` / `features/*` layout you list **every** tree that should expose a public entry, not only the feature folders.
 
-Each entry is a **directory path** (for example `src/features/auth`). That path is a **tree root**. Listed roots may import **another root’s public entry** only—not internals, and not sibling folders under the same root. String entries connect to each other in both directions; object entries use `allowedDependencies` for one-way edges.
+Each entry is a **directory path** (for example `src/features/auth`). That path is a **tree root**. Listed roots may import **another root’s public entry** only—not internals, and not sibling folders under the same root. String entries connect to each other in both directions.
 
 ## Flow inside one root
 
@@ -32,23 +32,7 @@ flowchart TB
   session --> auth
 ```
 
-Within that tree, the default rules still apply (parent → direct child public entry; skip-level, upward, and same-root siblings stay denied). See [Default boundaries](default-boundaries.md).
-
-## Listing many feature roots
-
-Instead of typing every folder under `src/features`, spread [`extractDirectChildDirs`](extract-direct-child-dirs.md):
-
-```js
-import { extractDirectChildDirs } from "eslint-plugin-import-boundary";
-
-{
-  rootFiles: [
-    "src/app",
-    "src/pages",
-    ...extractDirectChildDirs("src/features"),
-  ],
-}
-```
+Within that tree, the default rules still apply (parent → direct child public entry; skip-level, upward, and same-root siblings stay denied).
 
 ## Roots referencing each other
 
@@ -84,38 +68,17 @@ graph LR
 
 Every pair among **string** entries may talk (bidirectional).
 
-## Directed dependencies
+## Options
 
-Use an object entry when one root should depend on others **one way**. `path` is the same directory path form as a string entry. `allowedDependencies` lists other roots’ paths whose public entries this root may import.
+Object entries on `rootFiles` can set these fields:
 
-```js
-{
-  rootFiles: [
-    "src/features/auth",
-    "src/features/cart",
-    {
-      path: "src/features/checkout",
-      allowedDependencies: [
-        "src/features/auth",
-        "src/features/cart",
-      ],
-    },
-  ],
-}
-```
+| Option | Description | Values | Default |
+|--------|-------------|--------|---------|
+| [`allowedDependencies`](allowed-dependencies.md) | Other roots whose public entries this root may import (one-way). | `string[]` | no special behavior |
+| [`allowFreeInternal`](allow-free-internal.md) | Allow any import among modules under this root; cross-root stays public-entry-only. | `boolean` | `false` |
+## Utility
 
-```mermaid
-flowchart LR
-  auth <--> cart
-  checkout -->|allowedDependencies| auth
-  checkout -->|allowedDependencies| cart
-```
-
-- `checkout → auth` and `checkout → cart` are allowed (public entries only).
-- `auth ↔ cart` stay bidirectional because both are strings.
-- `auth → checkout` and `cart → checkout` stay denied.
-
-Omit `allowedDependencies` (or pass `[]`) to register a root with **no** outbound cross-root edges. String entries never auto-connect to object entries—list the reverse edge explicitly if you need it.
+- **`extractDirectChildDirs`** — Helper that returns the immediate child directories of a path, so you can spread them into `rootFiles` instead of listing each folder by hand. For details, see [`extractDirectChildDirs`](extract-direct-child-dirs.md).
 
 ## Allowed
 
@@ -144,9 +107,3 @@ import { Auth } from ".."; // upwardImport — child modules may not import ance
 ```
 
 Without `rootFiles`, peer trees stay denied—so omit a root only when nothing outside that tree should import its public entry.
-
-## Related
-
-- Expand child folders: [`extractDirectChildDirs`](extract-direct-child-dirs.md)
-- Shared logic inside one tree: [`sharedFiles`](shared-files.md)
-- Default allow/deny: [Default boundaries](default-boundaries.md)

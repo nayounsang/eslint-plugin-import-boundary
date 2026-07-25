@@ -73,6 +73,9 @@ export const importBoundaryRule = createRule<Options, ViolationId>({
                                             type: "array",
                                             items: { type: "string" },
                                         },
+                                        allowFreeInternal: {
+                                            type: "boolean",
+                                        },
                                     },
                                     required: ["path"],
                                     additionalProperties: false,
