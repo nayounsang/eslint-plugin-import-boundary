@@ -54,7 +54,7 @@ Full boundary rules, diagrams, and allow/deny examples: [docs](https://nayounsan
 |--------|------|---------|---------|
 | `publicEntryFiles` | `string[]` (optional) | `["**/index"]` | File globs for each folder’s public entry (basename match is extension-agnostic). Directory globs are rejected. |
 | `sharedFiles` | `string[]` (optional) | `[]` | Glob patterns for shared resources. Matched targets may be imported by modules under the owning folder (parent of the shared entry). |
-| `rootFiles` | `(string \| { path: string; allowedDependencies?: string[] })[]` | `[]` | Directory paths for tree roots (e.g. `src/features/auth`). String entries may import **each other’s public entry**; object entries list outbound roots in `allowedDependencies`. |
+| `rootFiles` | `(string \| { path: string; allowedDependencies?: string[]; allowFreeInternal?: boolean })[]` | `[]` | Directory paths for tree roots (e.g. `src/features/auth`). String entries may import **each other’s public entry**; object entries list outbound roots in `allowedDependencies`. Set `allowFreeInternal: true` to allow any import within that root while keeping cross-root public-entry-only. |
 
 ## Helpers
 

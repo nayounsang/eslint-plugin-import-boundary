@@ -220,6 +220,16 @@ export function classifyImport(
 
     const graph = parseRootFilesGraph(options.rootFiles ?? []);
 
+    const fromRoot = getFilesRoot(fromPath, graph.roots);
+    const toRoot = getFilesRoot(target, graph.roots);
+    if (
+        fromRoot !== null &&
+        fromRoot === toRoot &&
+        graph.allowFreeInternalRoots.has(fromRoot)
+    ) {
+        return null;
+    }
+
     if (isAllowedTarget(fromPath, target, graph)) {
         // Alias imports that resolve to the module root are treated as barrels;
         // only relative imports need a canonical relative form check.

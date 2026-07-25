@@ -14,6 +14,8 @@ export type RootFilesEntry =
     | {
           path: string;
           allowedDependencies?: string[];
+          /** When true, any import whose from/to both lie under this root is allowed. */
+          allowFreeInternal?: boolean;
       };
 
 /**
@@ -55,11 +57,14 @@ export type RootFilesGraph = {
     roots: readonly string[];
     /** fromRoot → set of toRoot (barrel targets only). */
     allowedDependencies: ReadonlyMap<string, ReadonlySet<string>>;
+    /** Roots whose internals may import each other freely. */
+    allowFreeInternalRoots: ReadonlySet<string>;
 };
 
 export const EMPTY_ROOT_FILES_GRAPH: RootFilesGraph = {
     roots: [],
     allowedDependencies: new Map(),
+    allowFreeInternalRoots: new Set(),
 };
 
 function addEdge(
@@ -90,6 +95,7 @@ export function parseRootFilesGraph(
     const roots: string[] = [];
     const stringRoots: string[] = [];
     const objectDeps: Array<{ from: string; deps: readonly string[] }> = [];
+    const allowFreeInternalRoots = new Set<string>();
 
     for (const entry of entries) {
         const pattern = typeof entry === "string" ? entry : entry.path;
@@ -108,6 +114,9 @@ export function parseRootFilesGraph(
                 from: absolute,
                 deps: entry.allowedDependencies ?? [],
             });
+            if (entry.allowFreeInternal === true) {
+                allowFreeInternalRoots.add(absolute);
+            }
         }
     }
 
@@ -142,7 +151,7 @@ export function parseRootFilesGraph(
         }
     }
 
-    return { roots, allowedDependencies };
+    return { roots, allowedDependencies, allowFreeInternalRoots };
 }
 
 /** Absolute module roots derived from `rootFiles` entries. */

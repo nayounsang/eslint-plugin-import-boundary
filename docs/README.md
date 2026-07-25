@@ -93,13 +93,14 @@ graph LR
   G --- H
 ```
 
-Object entries can restrict edges with `allowedDependencies` (one-way). See [`rootFiles`](root-files.md).
+Object entries can restrict edges with [`allowedDependencies`](allowed-dependencies.md) (one-way). Use [`allowFreeInternal`](allow-free-internal.md) when a root should keep a free internal layout.
 
 ## Next steps
 
 1. [Quick start](quick-start.md) — install and minimal config
 2. [`rootFiles`](root-files.md) — choose roots and cross-root edges
-3. [`extractDirectChildDirs`](extract-direct-child-dirs.md) — list feature folders for `rootFiles`
-4. [`sharedFiles`](shared-files.md) — shared logic inside one tree
-5. [`publicEntryFiles`](public-entry-files.md) — folder public entry basename
-6. [Default boundaries](default-boundaries.md) — what is allowed or denied by default
+3. [`allowedDependencies`](allowed-dependencies.md) / [`allowFreeInternal`](allow-free-internal.md) — object-entry options
+4. [`extractDirectChildDirs`](extract-direct-child-dirs.md) — list feature folders for `rootFiles`
+5. [`sharedFiles`](shared-files.md) — shared logic inside one tree
+6. [`publicEntryFiles`](public-entry-files.md) — folder public entry basename
+7. [Default boundaries](default-boundaries.md) — what is allowed or denied by default

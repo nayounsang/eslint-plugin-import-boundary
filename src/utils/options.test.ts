@@ -87,6 +87,45 @@ describe("parseOptions", () => {
         });
     });
 
+    it("accepts rootFiles object entries with allowFreeInternal", () => {
+        expect(
+            parseOptions({
+                rootFiles: [
+                    "A",
+                    {
+                        path: "B",
+                        allowFreeInternal: true,
+                        allowedDependencies: ["A"],
+                    },
+                ],
+            }),
+        ).toEqual({
+            publicEntryFiles: ["**/index"],
+            sharedFiles: [],
+            rootFiles: [
+                "A",
+                {
+                    path: "B",
+                    allowFreeInternal: true,
+                    allowedDependencies: ["A"],
+                },
+            ],
+        });
+    });
+
+    it("rejects non-boolean allowFreeInternal", () => {
+        expect(() =>
+            parseOptions({
+                rootFiles: [
+                    {
+                        path: "A",
+                        allowFreeInternal: "yes",
+                    },
+                ],
+            }),
+        ).toThrow(/import-boundary: invalid options/);
+    });
+
     it("rejects unknown keys with a schema message", () => {
         expect(() => parseOptions({ sharedFiles: [], root: "src" })).toThrow(
             /Unknown option keys are not allowed/,

@@ -1,6 +1,8 @@
 - [Home](README.md)
 - [Quick start](quick-start.md)
 - [rootFiles](root-files.md)
+- [allowedDependencies](allowed-dependencies.md)
+- [allowFreeInternal](allow-free-internal.md)
 - [sharedFiles](shared-files.md)
 - [publicEntryFiles](public-entry-files.md)
 - [extractDirectChildDirs](extract-direct-child-dirs.md)
